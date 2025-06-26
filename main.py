@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QPushButton, QListWidget, QListWidgetItem,
     QMessageBox, QComboBox, QMainWindow
 )
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import Qt
 
 from modules.db_manager import init_db, add_product, get_products
@@ -40,6 +40,8 @@ class StockpileApp(QMainWindow):
             self.ask_date_format()
 
         init_db()
+        self.apply_theme(self.config["theme"])
+
         self.setup_ui()
         self.refresh_list()
 
@@ -62,38 +64,6 @@ class StockpileApp(QMainWindow):
     def setup_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-
-        self.setStyleSheet("""
-            QWidget {
-                font-family: 'Segoe UI', sans-serif;
-                font-size: 11pt;
-            }
-            QLineEdit {
-                padding: 6px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-            }
-            QPushButton {
-                background-color: #3A7BD5;
-                color: white;
-                padding: 8px 14px;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #285EA8;
-            }
-            QPushButton:disabled {
-                background-color: #aaa;
-            }
-            QListWidget {
-                background-color: #f9f9f9;
-                border: 1px solid #ccc;
-                padding: 5px;
-            }
-            QLabel {
-                font-weight: bold;
-            }
-        """)
 
         main_layout = QHBoxLayout()
 
@@ -136,6 +106,12 @@ class StockpileApp(QMainWindow):
         button_layout.addWidget(self.edit_button)
         button_layout.addWidget(self.delete_button)
 
+        # Theme Toggle
+        self.theme_button = QPushButton("🌙 Toggle Theme")
+        self.theme_button.clicked.connect(self.toggle_theme)
+        right_layout.addWidget(self.theme_button)
+
+
         right_layout.addLayout(button_layout)
 
         # Add layouts to main layout
@@ -150,6 +126,11 @@ class StockpileApp(QMainWindow):
         self.edit_button.clicked.connect(self.edit_product)
         self.delete_button.clicked.connect(self.delete_product)
 
+    def toggle_theme(self):
+        new_theme = "dark" if self.config["theme"] == "light" else "light"
+        self.config["theme"] = new_theme
+        self.apply_theme(new_theme)
+        save_config(theme=new_theme)
 
 
     def add_product(self):
@@ -199,12 +180,24 @@ class StockpileApp(QMainWindow):
             item = QListWidgetItem(item_text)
             item.setData(Qt.UserRole, product_id)
 
-            if status == "Expired":
-                item.setForeground(Qt.red)
-            elif status == "Expiring Soon":
-                item.setForeground(Qt.darkYellow)
+            is_dark = self.config.get("theme", "light") == "dark"
+
+            if self.config.get("theme", "light") == "dark":
+                if status == "Expired":
+                    item.setForeground(QColor("#FF6B6B"))       # Soft red
+                elif status == "Expiring Soon":
+                    item.setForeground(QColor("#FFD93D"))       # Bright amber
+                else:
+                    item.setForeground(QColor("#6BCB77"))       # Mint green
             else:
-                item.setForeground(Qt.darkGreen)
+                if status == "Expired":
+                    item.setForeground(QColor("#D32F2F"))       # Strong red
+                elif status == "Expiring Soon":
+                    item.setForeground(QColor("#F9A825"))       # Golden amber
+                else:
+                    item.setForeground(QColor("#388E3C"))       # Strong green
+
+
 
             self.product_list.addItem(item)
 
@@ -307,6 +300,91 @@ class StockpileApp(QMainWindow):
         self.selected_product_id = None
         self.edit_button.setEnabled(False)
         self.delete_button.setEnabled(False)
+
+    def apply_theme(self, theme):
+        if theme == "dark":
+            self.setStyleSheet("""
+                QWidget {
+                    background-color: #2E2E2E;
+                    color: #F0F0F0;
+                    font-family: 'Segoe UI', sans-serif;
+                    font-size: 11pt;
+                }
+                QLineEdit {
+                    background-color: #3E3E3E;
+                    color: #F0F0F0;
+                    border: 1px solid #555;
+                    border-radius: 4px;
+                    padding: 6px;
+                }
+                QPushButton {
+                    background-color: #555;
+                    color: #F0F0F0;
+                    padding: 8px 14px;
+                    border-radius: 5px;
+                }
+                QPushButton:hover {
+                    background-color: #777;
+                }
+                QPushButton:disabled {
+                    background-color: #333;
+                    color: #999;
+                }
+                QListWidget {
+                    background-color: #3E3E3E;
+                    color: #F0F0F0;
+                    border: 1px solid #555;
+                    padding: 5px;
+                }
+                QListWidget::item {
+                    background-color: #3E3E3E;
+                }
+                QListWidget::item:alternate {
+                    background-color: #333;
+                }
+                QListWidget::item:selected {
+                    background-color: #555;
+                    color: #FFFFFF;
+}
+
+                QLabel {
+                    font-weight: bold;
+                }
+            """)
+
+        else:
+            # Light theme
+            self.setStyleSheet("""
+                QWidget {
+                    font-family: 'Segoe UI', sans-serif;
+                    font-size: 11pt;
+                }
+                QLineEdit {
+                    padding: 6px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                }
+                QPushButton {
+                    background-color: #3A7BD5;
+                    color: white;
+                    padding: 8px 14px;
+                    border-radius: 5px;
+                }
+                QPushButton:hover {
+                    background-color: #285EA8;
+                }
+                QPushButton:disabled {
+                    background-color: #aaa;
+                }
+                QListWidget {
+                    background-color: #f9f9f9;
+                    border: 1px solid #ccc;
+                    padding: 5px;
+                }
+                QLabel {
+                    font-weight: bold;
+                }
+            """)
 
 
 if __name__ == "__main__":
