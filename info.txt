@@ -1,0 +1,1 @@
+pyinstaller --name Stockpiler --onefile --windowed --icon=assets/icon.ico main.py
